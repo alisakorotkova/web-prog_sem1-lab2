@@ -329,7 +329,7 @@ h1 {
 /* Поиск и фильтры */
 .filters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px 155px;
+  grid-template-columns: minmax(0, 1fr) 135px 145px 150px;
   align-items: end;
   gap: 10px 14px;
   margin: 20px 0 6px;
@@ -364,13 +364,19 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .filters > .field:first-child {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 380px) {
   .filters {
     grid-template-columns: 1fr;
   }
+}
+
+.filters select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 6 5 5 5-5' fill='none' stroke='%23171719' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px 14px;
 }

@@ -63,6 +63,17 @@ for (const [value, text] of [
 
 const filterDate = element('input');
 filterDate.type = 'date';
+const sortSelect = element('select');
+
+for (const [value, text] of [
+  ['manual', 'Мой порядок'],
+  ['planned', 'По дате плана'],
+  ['deadline', 'По дедлайну']
+]) {
+  const option = element('option', '', text);
+  option.value = value;
+  sortSelect.append(option);
+}
 
 const resetFilters = element('button', 'text-button filter-reset', 'Сбросить');
 resetFilters.type = 'button';
@@ -72,6 +83,7 @@ filters.append(
   field('Поиск', searchInput),
   field('Состояние', statusSelect),
   field('Дата', filterDate),
+  field('Порядок', sortSelect),
   resetFilters
 );
 
@@ -239,6 +251,21 @@ function renderTasks() {
     return matchesName && matchesStatus && matchesDate;
   });
 
+  const dateField = sortSelect.value;
+
+  if (dateField !== 'manual') {
+    visibleTasks.sort((first, second) => {
+      const firstDate = first[dateField] || '';
+      const secondDate = second[dateField] || '';
+
+      if (!firstDate && !secondDate) return 0;
+      if (!firstDate) return 1;
+      if (!secondDate) return -1;
+
+      return firstDate.localeCompare(secondDate);
+    });
+  }
+
   list.replaceChildren();
   resetFilters.hidden = !hasFilters;
 
@@ -312,6 +339,7 @@ function renderTasks() {
 
 searchInput.addEventListener('input', renderTasks);
 statusSelect.addEventListener('change', renderTasks);
+sortSelect.addEventListener('change', renderTasks);
 filterDate.addEventListener('input', renderTasks);
 
 resetFilters.addEventListener('click', () => {
