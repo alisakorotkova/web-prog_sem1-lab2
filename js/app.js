@@ -20,7 +20,12 @@ const stylesheet = element('link');
 stylesheet.rel = 'stylesheet';
 stylesheet.href = 'css/style.css';
 
-document.head.append(charset, viewport, stylesheet);
+const favicon = element('link');
+favicon.rel = 'icon';
+favicon.type = 'image/svg+xml';
+favicon.href = './favicon.svg';
+
+document.head.append(charset, viewport, stylesheet, favicon);
 
 // Основной экран
 const main = element('main', 'planner');
