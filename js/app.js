@@ -43,7 +43,39 @@ const empty = element('p', 'empty', 'Пока пусто. Нажми +, чтоб
 const notice = element('p', 'notice');
 notice.setAttribute('role', 'status');
 
-section.append(heading, empty, list, notice);
+const filters = element('div', 'filters');
+
+const searchInput = element('input');
+searchInput.type = 'search';
+searchInput.placeholder = 'Название задачи';
+
+const statusSelect = element('select');
+
+for (const [value, text] of [
+  ['all', 'Все задачи'],
+  ['active', 'Активные'],
+  ['done', 'Выполненные']
+]) {
+  const option = element('option', '', text);
+  option.value = value;
+  statusSelect.append(option);
+}
+
+const filterDate = element('input');
+filterDate.type = 'date';
+
+const resetFilters = element('button', 'text-button filter-reset', 'Сбросить');
+resetFilters.type = 'button';
+resetFilters.hidden = true;
+
+filters.append(
+  field('Поиск', searchInput),
+  field('Состояние', statusSelect),
+  field('Дата', filterDate),
+  resetFilters
+);
+
+section.append(heading, filters, empty, list, notice);
 main.append(header, section);
 
 const addButton = element('button', 'add-button');
@@ -192,11 +224,34 @@ function dateTag(label, value, className) {
 }
 
 function renderTasks() {
-  list.replaceChildren();
-  count.textContent = String(tasks.length).padStart(2, '0');
-  empty.hidden = tasks.length > 0;
+  const query = searchInput.value.trim().toLocaleLowerCase('ru');
+  const status = statusSelect.value;
+  const date = filterDate.value;
+  const hasFilters = Boolean(query || status !== 'all' || date);
 
-  for (const task of tasks) {
+  const visibleTasks = tasks.filter((task) => {
+    const matchesName = task.name.toLocaleLowerCase('ru').includes(query);
+    const matchesStatus =
+      status === 'all' || (status === 'done' ? task.done : !task.done);
+    const matchesDate =
+      !date || task.planned === date || task.deadline === date;
+
+    return matchesName && matchesStatus && matchesDate;
+  });
+
+  list.replaceChildren();
+  resetFilters.hidden = !hasFilters;
+
+  count.textContent = hasFilters
+    ? `${visibleTasks.length} из ${tasks.length}`
+    : String(tasks.length).padStart(2, '0');
+
+  empty.hidden = visibleTasks.length > 0;
+  empty.textContent = tasks.length === 0
+    ? 'Пока пусто. Нажми +, чтобы записать первое дело.'
+    : 'По этим условиям задач нет. Попробуй сбросить фильтры.';
+
+  for (const task of visibleTasks) {
     const row = element('li', 'task-row');
     row.classList.toggle('is-done', task.done);
 
@@ -205,9 +260,15 @@ function renderTasks() {
     check.checked = task.done;
     check.setAttribute('aria-label', `Выполнено: ${task.name}`);
     check.addEventListener('change', () => {
-      task.done = check.checked;
+    task.done = check.checked;
+    saveTasks();
+
+    if (statusSelect.value === 'all') {
       row.classList.toggle('is-done', task.done);
-      saveTasks();
+    } else {
+      renderTasks();
+      statusSelect.focus();
+    }
     });
 
     const content = element('div', 'task-content');
@@ -248,5 +309,18 @@ function renderTasks() {
     list.append(row);
   }
 }
+
+searchInput.addEventListener('input', renderTasks);
+statusSelect.addEventListener('change', renderTasks);
+filterDate.addEventListener('input', renderTasks);
+
+resetFilters.addEventListener('click', () => {
+  searchInput.value = '';
+  statusSelect.value = 'all';
+  filterDate.value = '';
+  renderTasks();
+  searchInput.focus();
+});
+
 
 renderTasks();
