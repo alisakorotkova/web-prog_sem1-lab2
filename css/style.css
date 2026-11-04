@@ -380,3 +380,63 @@ h1 {
   background-position: right 12px center;
   background-size: 14px 14px;
 }
+
+.order-hint {
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.task-row.can-reorder {
+  position: relative;
+  grid-template-columns: 28px minmax(0, 1fr) 44px;
+}
+
+.drag-handle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  background: var(--purple-bg);
+  color: var(--purple-ink);
+}
+
+.is-dragging .drag-handle {
+  color: var(--purple-ink);
+  cursor: grabbing;
+}
+
+.drop-before::before,
+.drop-after::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--purple-ink);
+  pointer-events: none;
+}
+
+.drop-before::before {
+  top: 0;
+}
+
+.drop-after::after {
+  bottom: 0;
+}

@@ -87,7 +87,14 @@ filters.append(
   resetFilters
 );
 
-section.append(heading, filters, empty, list, notice);
+const orderHint = element(
+  'p',
+  'order-hint',
+  'Потяни за ⠿, чтобы изменить порядок. С клавиатуры используй ↑ и ↓.'
+);
+orderHint.id = 'order-hint';
+
+section.append(heading, filters, orderHint, empty, list, notice);
 main.append(header, section);
 
 const addButton = element('button', 'add-button');
@@ -235,6 +242,110 @@ function dateTag(label, value, className) {
   return tag;
 }
 
+function moveTask(taskId, newIndex) {
+  const oldIndex = tasks.findIndex((task) => task.id === taskId);
+
+  if (
+    oldIndex === -1 ||
+    oldIndex === newIndex ||
+    newIndex < 0 ||
+    newIndex >= tasks.length
+  ) {
+    return;
+  }
+
+  const [task] = tasks.splice(oldIndex, 1);
+  tasks.splice(newIndex, 0, task);
+
+  saveTasks();
+  renderTasks();
+
+  list.children[newIndex]?.querySelector('.drag-handle')?.focus();
+}
+
+function createDragHandle(task, row) {
+  const handle = element('button', 'drag-handle', '⠿');
+  handle.type = 'button';
+  handle.title = 'Потяни для перемещения или используй стрелки ↑ и ↓';
+  handle.setAttribute('aria-label', `Переместить задачу «${task.name}»`);
+  handle.setAttribute('aria-describedby', 'order-hint');
+
+  handle.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+
+    event.preventDefault();
+    const index = tasks.findIndex((item) => item.id === task.id);
+    const step = event.key === 'ArrowUp' ? -1 : 1;
+    moveTask(task.id, index + step);
+  });
+
+  let pointerId = null;
+  let targetRow = null;
+  let insertAfter = false;
+
+  function clearTarget() {
+    targetRow?.classList.remove('drop-before', 'drop-after');
+    targetRow = null;
+  }
+
+  function updateTarget(event) {
+    clearTarget();
+
+    const hit = document.elementFromPoint(event.clientX, event.clientY);
+    const candidate = hit?.closest('.task-row');
+
+    if (!candidate || candidate.parentElement !== list || candidate === row) {
+      return;
+    }
+
+    targetRow = candidate;
+    const bounds = targetRow.getBoundingClientRect();
+    insertAfter = event.clientY >= bounds.top + bounds.height / 2;
+    targetRow.classList.add(insertAfter ? 'drop-after' : 'drop-before');
+  }
+
+  function finishDrag() {
+    pointerId = null;
+    clearTarget();
+    row.classList.remove('is-dragging');
+  }
+
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || pointerId !== null) return;
+
+    pointerId = event.pointerId;
+    handle.setPointerCapture(pointerId);
+    row.classList.add('is-dragging');
+  });
+
+  handle.addEventListener('pointermove', (event) => {
+    if (event.pointerId === pointerId) updateTarget(event);
+  });
+
+  handle.addEventListener('pointerup', (event) => {
+    if (event.pointerId !== pointerId) return;
+
+    updateTarget(event);
+    if (!targetRow) {
+      finishDrag();
+      return;
+    }
+
+    const rows = Array.from(list.children);
+    const oldIndex = rows.indexOf(row);
+    let newIndex = rows.indexOf(targetRow) + Number(insertAfter);
+
+    if (oldIndex < newIndex) newIndex -= 1;
+
+    finishDrag();
+    moveTask(task.id, newIndex);
+  });
+
+  handle.addEventListener('lostpointercapture', finishDrag);
+
+  return handle;
+}
+
 function renderTasks() {
   const query = searchInput.value.trim().toLocaleLowerCase('ru');
   const status = statusSelect.value;
@@ -268,6 +379,10 @@ function renderTasks() {
 
   list.replaceChildren();
   resetFilters.hidden = !hasFilters;
+  const canReorder =
+  sortSelect.value === 'manual' && !hasFilters && tasks.length > 1;
+
+  orderHint.hidden = !canReorder;
 
   count.textContent = hasFilters
     ? `${visibleTasks.length} из ${tasks.length}`
@@ -333,6 +448,10 @@ function renderTasks() {
     actions.append(edit, remove);
     content.append(actions);
     row.append(check, content);
+    if (canReorder) {
+      row.classList.add('can-reorder');
+      row.append(createDragHandle(task, row));
+    }
     list.append(row);
   }
 }
